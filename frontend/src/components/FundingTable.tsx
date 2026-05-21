@@ -21,8 +21,6 @@ function fmtVol(n: number) {
 
 // Desktop: 10 columns
 const GRID_DESKTOP = 'grid-cols-[32px_1.4fr_1.1fr_1.3fr_1.5fr_1.5fr_1.5fr_1.2fr_1.1fr_32px]';
-// Tablet: fewer columns
-const GRID_TABLET = 'grid-cols-[28px_1.4fr_1fr_1.3fr_1.5fr_1.5fr_1.2fr_28px]';
 
 function SkeletonRow({ i, isMobile }: { i: number; isMobile: boolean }) {
   if (isMobile) {

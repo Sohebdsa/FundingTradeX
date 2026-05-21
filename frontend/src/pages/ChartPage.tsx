@@ -264,27 +264,6 @@ function computeIndicator(candles: Candle[], cfg: IndicatorConfig): Record<strin
   }
 }
 
-// ─── Canvas Drawing ───────────────────────────────────────────────────────────
-function drawSeries(
-  ctx: CanvasRenderingContext2D,
-  series: (number|null)[],
-  vis: Candle[], vStart: number,
-  px: (i:number)=>number, py: (v:number, min:number, max:number, top:number, h:number)=>number,
-  color: string, lineWidth: number,
-  min: number, max: number, top: number, h: number,
-  fill?: { above?: string; below?: string; midY?: number }
-) {
-  ctx.strokeStyle = color; ctx.lineWidth = lineWidth; ctx.setLineDash([]);
-  ctx.beginPath();
-  let started = false;
-  vis.forEach((_, i) => {
-    const v = series[vStart + i];
-    if (v === null || isNaN(v)) { started = false; return; }
-    const x = px(i), y = py(v, min, max, top, h);
-    if (!started) { ctx.moveTo(x,y); started=true; } else ctx.lineTo(x,y);
-  });
-  ctx.stroke();
-}
 
 function drawChart(
   canvas: HTMLCanvasElement,

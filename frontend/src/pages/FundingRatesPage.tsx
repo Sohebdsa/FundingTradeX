@@ -1,7 +1,7 @@
 import { useStore } from '../store';
 import { FilterBar } from '../components/FilterBar';
 import { FundingTable } from '../components/FundingTable';
-import { TrendingUp, TrendingDown, Activity, BarChart2 } from 'lucide-react';
+import { Activity } from 'lucide-react';
 
 function StatCard({ label, value, sub, color }: { label: string; value: string | number; sub?: string; color?: string }) {
   return (
@@ -14,16 +14,11 @@ function StatCard({ label, value, sub, color }: { label: string; value: string |
 }
 
 export function FundingRatesPage() {
-  const { fundingRates, arbitrageOpportunities, totalPairs } = useStore();
+  const { fundingRates, totalPairs } = useStore();
 
   const extreme = fundingRates.filter(d => Math.abs(d.avgRate) > 0.05).length;
   const topPos = fundingRates.filter(d => d.avgRate > 0).sort((a, b) => b.avgRate - a.avgRate)[0];
   const topNeg = fundingRates.filter(d => d.avgRate < 0).sort((a, b) => a.avgRate - b.avgRate)[0];
-  const highSpread = fundingRates.filter(d => {
-    const r = [d.binance.rate, d.bybit.rate];
-    if (d.blofin) r.push(d.blofin.rate);
-    return (Math.max(...r) - Math.min(...r)) > 0.01;
-  }).length;
 
   return (
     <div className="flex flex-col h-full">

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store';
+import { BACKEND_URL } from '../utils/config';
 import { ArbitrageOpportunities } from '../components/ArbitrageOpportunities';
 import { SignalFeed } from '../components/SignalFeed';
 import { Grid3X3, BarChart2, Activity, Volume2, Zap, ExternalLink, TrendingUp } from 'lucide-react';
@@ -110,7 +111,7 @@ function FootprintPanel() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`http://localhost:5000/api/klines?symbol=${sym}&interval=15m&limit=30`)
+    fetch(`${BACKEND_URL}/api/klines?symbol=${sym}&interval=15m&limit=30`)
       .then(r => r.json())
       .then(raw => {
         setCandles(raw.map((k: number[]) => ({ time: k[0], open: +k[1], high: +k[2], low: +k[3], close: +k[4], volume: +k[5] })));

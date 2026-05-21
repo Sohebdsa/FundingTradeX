@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { io, Socket } from 'socket.io-client';
+import { BACKEND_URL } from './utils/config';
 
 export interface FundingData {
   symbol: string;
@@ -100,7 +101,7 @@ export const useStore = create<MarketState>((set, get) => ({
 
   connect: () => {
     if (get().socket) return;
-    const socket = io('http://localhost:5000');
+    const socket = io(BACKEND_URL);
     socket.on('connect',          () => set({ isConnected: true, socket }));
     socket.on('disconnect',       () => set({ isConnected: false }));
     socket.on('market_update', data  => set({

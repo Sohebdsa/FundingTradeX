@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useStore } from '../store';
+import { BACKEND_URL } from '../utils/config';
 import {
   ArrowLeft, RefreshCw, Volume2, Zap, ZoomIn, ZoomOut, Footprints,
   Plus, X, Settings2, ChevronDown, ChevronUp, Layers, Sliders,
@@ -699,7 +700,7 @@ function IndicatorPanel({
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 async function fetchCandles(sym: string, iv: string, limit = 300): Promise<Candle[]> {
-  const r = await fetch(`http://localhost:5000/api/klines?symbol=${sym}&interval=${iv}&limit=${limit}`);
+  const r = await fetch(`${BACKEND_URL}/api/klines?symbol=${sym}&interval=${iv}&limit=${limit}`);
   const raw: number[][] = await r.json();
   return raw.map(k => ({ time: k[0], open: +k[1], high: +k[2], low: +k[3], close: +k[4], volume: +k[5] }));
 }

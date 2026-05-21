@@ -3,12 +3,36 @@ const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const axios = require('axios');
+const config = require('./config');
 
 const app = express();
-app.use(cors());
+
+const corsOriginCheck = (origin, callback) => {
+  if (!config.enableCors || !origin) {
+    return callback(null, true);
+  }
+  if (config.allowedOrigin === '*' || origin === config.allowedOrigin) {
+    return callback(null, true);
+  }
+  try {
+    const originUrl = new URL(origin);
+    const hostname = originUrl.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return callback(null, true);
+    }
+    if (config.backendIp && hostname === config.backendIp) {
+      return callback(null, true);
+    }
+  } catch (e) {
+    // ignore parsing errors
+  }
+  callback(new Error('Not allowed by CORS'));
+};
+
+app.use(cors({ origin: corsOriginCheck, credentials: true }));
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: '*', methods: ['GET', 'POST'] } });
-const PORT = process.env.PORT || 5000;
+const io = new Server(server, { cors: { origin: corsOriginCheck, methods: ['GET', 'POST'] } });
+const PORT = config.port;
 
 // ─── State ────────────────────────────────────────────────────────────────────
 let marketData = {

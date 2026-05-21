@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useStore } from '../store';
@@ -7,7 +7,7 @@ import { TrendingUp, TrendingDown, Minus, ChevronRight } from 'lucide-react';
 
 function rateColor(rate: number) {
   if (rate >  0.07) return 'text-[#ef4444]';
-  if (rate >  0.03) return 'text-[#f97316]'; // orange
+  if (rate >  0.03) return 'text-[#f97316]';
   if (rate < -0.07) return 'text-[#10b981]';
   if (rate < -0.03) return 'text-[#34d399]';
   return 'text-text-dark';
@@ -19,8 +19,11 @@ function fmtVol(n: number) {
   return `$${(n / 1e3).toFixed(0)}K`;
 }
 
-// Desktop: 10 columns
-const GRID_DESKTOP = 'grid-cols-[32px_1.4fr_1.1fr_1.3fr_1.5fr_1.5fr_1.5fr_1.2fr_1.1fr_32px]';
+// Responsive grid: fewer columns on smaller containers
+// We drive this off a container-width class applied to the wrapper div
+const GRID_FULL  = 'grid-cols-[28px_1.5fr_1fr_1.1fr_1.3fr_1.3fr_1.3fr_1fr_0.9fr_28px]'; // ≥900px
+const GRID_MED   = 'grid-cols-[24px_1.5fr_1fr_1.3fr_1.3fr_1.3fr_1fr_24px]';              // 600–900px (no vol, no blofin)
+const GRID_SMALL = 'grid-cols-[24px_1.5fr_1.1fr_1.3fr_1.3fr_24px]';                      // <600px (rank, asset, spread, binance, bybit)
 
 function SkeletonRow({ i, isMobile }: { i: number; isMobile: boolean }) {
   if (isMobile) {
@@ -36,18 +39,11 @@ function SkeletonRow({ i, isMobile }: { i: number; isMobile: boolean }) {
     );
   }
   return (
-    <div className={`grid ${GRID_DESKTOP} items-center px-4 py-2 border-b border-border/40`}>
-      {Array.from({ length: 9 }).map((_, j) => (
-        <div
-          key={j}
-          className="h-3 rounded animate-pulse bg-border"
-          style={{
-            opacity: 0.4 + (i % 3) * 0.15,
-            width: j === 1 ? '70%' : j === 0 ? '16px' : '80%',
-          }}
-        />
+    <div className="flex items-center gap-2 px-3 py-2 border-b border-border/40">
+      {Array.from({ length: 5 }).map((_, j) => (
+        <div key={j} className="h-3 rounded animate-pulse bg-border flex-1"
+          style={{ opacity: 0.4 + (i % 3) * 0.15 }} />
       ))}
-      <div />
     </div>
   );
 }
@@ -85,15 +81,12 @@ function MobileRow({ d, index, onClick }: { d: any; index: number; onClick: () =
       onClick={onClick}
       className={`flex items-center px-3 py-2.5 border-b border-border/50 cursor-pointer active:bg-panel-hover gap-2 ${isExtreme ? 'bg-[#291910]/20' : ''}`}
     >
-      {/* Rank + indicator */}
       <div className="text-[10px] text-text-dark w-5 flex-shrink-0">{index + 1}</div>
 
-      {/* Color bar */}
       <div className={`w-0.5 h-4 rounded-full flex-shrink-0 ${
         d.avgRate > 0.03 ? 'bg-danger' : d.avgRate < -0.03 ? 'bg-success' : 'bg-border'
       }`} />
 
-      {/* Symbol */}
       <div className="flex-1 min-w-0">
         <div className="font-bold text-xs text-[#e2e8f0] leading-none truncate">
           {d.symbol.replace('USDT', '')}
@@ -103,17 +96,143 @@ function MobileRow({ d, index, onClick }: { d: any; index: number; onClick: () =
         </div>
       </div>
 
-      {/* Avg Rate */}
       <div className={`font-mono font-bold text-xs flex-shrink-0 ${rateColor(d.avgRate)}`}>
         {d.avgRate.toFixed(3)}%
       </div>
 
-      {/* Spread */}
       <div className={`font-mono text-[10px] flex-shrink-0 ${spreadColor}`}>
         {maxSpread > 0 ? `Δ${maxSpread.toFixed(3)}%` : '—'}
       </div>
 
       <ChevronRight size={12} className="text-text-dark flex-shrink-0" />
+    </div>
+  );
+}
+
+// Responsive desktop row — shows different columns depending on containerWidth
+function DesktopRow({
+  d, index, onClick, containerWidth,
+}: { d: any; index: number; onClick: () => void; containerWidth: number }) {
+  const price = d.binance.price || 0;
+  const isExtreme = Math.abs(d.avgRate) > 0.07;
+  const rates = [d.binance.rate, d.bybit.rate];
+  if (d.blofin) rates.push(d.blofin.rate);
+  const maxSpread = Math.max(...rates) - Math.min(...rates);
+  const spreadColor = maxSpread > 0.05
+    ? 'text-primary font-bold'
+    : maxSpread > 0.01
+    ? 'text-text-muted'
+    : 'text-text-dark';
+
+  const isFull  = containerWidth >= 900;
+  const isMed   = containerWidth >= 600 && containerWidth < 900;
+  const isSmall = containerWidth < 600;
+  const grid = isFull ? GRID_FULL : isMed ? GRID_MED : GRID_SMALL;
+
+  return (
+    <div
+      onClick={onClick}
+      className={`grid ${grid} items-center px-3 border-b border-border/50 cursor-pointer group transition-colors hover:bg-panel-hover ${
+        isExtreme ? 'bg-[#291910]/20' : ''
+      }`}
+      style={{ height: 44 }}
+    >
+      {/* Rank */}
+      <div className="text-[10px] text-text-dark">{index + 1}</div>
+
+      {/* Asset */}
+      <div className="flex items-center gap-1.5 min-w-0">
+        <div className={`w-0.5 h-5 rounded-full flex-shrink-0 ${
+          d.avgRate > 0.03 ? 'bg-danger' : d.avgRate < -0.03 ? 'bg-success' : 'bg-border'
+        }`} />
+        <div className="min-w-0">
+          <div className="font-bold text-xs text-[#e2e8f0] leading-none truncate">
+            {d.symbol.replace('USDT', '')}
+          </div>
+          <div className="text-[9px] text-text-dark mt-0.5">PERP</div>
+        </div>
+      </div>
+
+      {/* Price — full only */}
+      {isFull && (
+        <div className="text-right font-mono text-[11px] text-text-muted truncate pr-3">
+          {price > 0 ? `$${price.toLocaleString(undefined, { maximumFractionDigits: 4 })}` : '—'}
+        </div>
+      )}
+
+      {/* Max Spread */}
+      <div className={`text-right font-mono text-[11px] pr-3 ${spreadColor}`}>
+        {maxSpread > 0 ? `${maxSpread.toFixed(3)}%` : '—'}
+      </div>
+
+      {/* Binance */}
+      <div className="pr-2 flex justify-end">
+        <RateCell rate={d.binance.rate} nextFunding={d.binance.nextFunding} />
+      </div>
+
+      {/* Bybit */}
+      <div className="pr-2 flex justify-end">
+        <RateCell rate={d.bybit.rate} nextFunding={d.bybit.nextFunding} />
+      </div>
+
+      {/* Blofin — full + med */}
+      {(isFull || isMed) && (
+        <div className="pr-2 flex justify-end">
+          <RateCell rate={d.blofin?.rate ?? 0} nextFunding={d.blofin?.nextFunding} />
+        </div>
+      )}
+
+      {/* Avg rate — full + med */}
+      {(isFull || isMed) && (
+        <div className={`text-right font-mono font-bold text-xs pr-3 ${rateColor(d.avgRate)}`}>
+          {d.avgRate.toFixed(4)}%
+        </div>
+      )}
+
+      {/* 24h Vol — full only */}
+      {isFull && (
+        <div className="text-right font-mono text-[10px] text-text-dark pr-3">
+          {d.vol24h > 0 ? fmtVol(d.vol24h) : '—'}
+        </div>
+      )}
+
+      {/* Chevron */}
+      <div className="flex justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+        <ChevronRight size={12} className="text-text-dark" />
+      </div>
+    </div>
+  );
+}
+
+// Responsive desktop header — matches DesktopRow columns
+function DesktopHeader({ containerWidth }: { containerWidth: number }) {
+  const isFull  = containerWidth >= 900;
+  const isMed   = containerWidth >= 600 && containerWidth < 900;
+  const grid = isFull ? GRID_FULL : isMed ? GRID_MED : GRID_SMALL;
+
+  return (
+    <div className={`grid ${grid} items-center px-3 py-2 text-[9px] uppercase tracking-widest text-text-dark font-bold border-b border-border bg-[#030304] select-none`}>
+      <div>#</div>
+      <div className="pl-2">Asset</div>
+      {isFull && <div className="text-right pr-3">Price</div>}
+      <div className="text-right pr-3 text-primary">Spread</div>
+      <div className="text-right pr-2">
+        <div>Binance</div>
+        <div className="text-[8px] font-normal lowercase tracking-normal mt-0.5 text-text-dark/60">rate / next</div>
+      </div>
+      <div className="text-right pr-2">
+        <div>Bybit</div>
+        <div className="text-[8px] font-normal lowercase tracking-normal mt-0.5 text-text-dark/60">rate / next</div>
+      </div>
+      {(isFull || isMed) && (
+        <div className="text-right pr-2">
+          <div>Blofin</div>
+          <div className="text-[8px] font-normal lowercase tracking-normal mt-0.5 text-text-dark/60">rate / next</div>
+        </div>
+      )}
+      {(isFull || isMed) && <div className="text-right pr-3">Avg Rate</div>}
+      {isFull && <div className="text-right pr-3">24h Vol</div>}
+      <div />
     </div>
   );
 }
@@ -124,16 +243,34 @@ export function FundingTable() {
   const rows = filteredRates();
   const isLoading = fundingRates.length === 0;
 
-  const [view, setView] = useState<'desktop' | 'mobile'>(() => {
-    // Check initial viewport width for default view mode
-    if (typeof window !== 'undefined' && window.innerWidth < 768) return 'mobile';
-    return 'desktop';
-  });
+  // Auto-detect view based on window width; re-check on resize
+  const getView = () =>
+    typeof window !== 'undefined' && window.innerWidth < 640 ? 'mobile' : 'desktop';
 
+  const [view, setView] = useState<'desktop' | 'mobile'>(getView);
+  const [containerWidth, setContainerWidth] = useState(0);
   const parentRef = useRef<HTMLDivElement>(null);
-  const ROW_H_DESKTOP = 44;
-  const ROW_H_MOBILE = 52;
-  const ROW_H = view === 'mobile' ? ROW_H_MOBILE : ROW_H_DESKTOP;
+
+  // Track container width for responsive desktop columns
+  useEffect(() => {
+    const el = parentRef.current?.parentElement;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => {
+      setContainerWidth(entry.contentRect.width);
+    });
+    ro.observe(el);
+    setContainerWidth(el.clientWidth);
+    return () => ro.disconnect();
+  }, []);
+
+  // Sync view with window resize (mobile ↔ desktop auto-switch)
+  useEffect(() => {
+    const handler = () => setView(getView());
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+
+  const ROW_H = view === 'mobile' ? 52 : 44;
 
   const virtualizer = useVirtualizer({
     count: isLoading ? 20 : rows.length,
@@ -144,10 +281,10 @@ export function FundingTable() {
 
   return (
     <div className="flex flex-col h-full min-h-0 bg-panel rounded-lg overflow-hidden">
-      {/* View toggle */}
+      {/* Top bar: title + view toggle (toggle hidden on mobile — auto-switches) */}
       <div className="flex-shrink-0 flex items-center justify-between border-b border-border bg-[#030304] px-3 py-1.5">
         <div className="text-[9px] uppercase tracking-widest text-text-dark font-bold">Funding Rates</div>
-        <div className="flex gap-1">
+        <div className="hidden sm:flex gap-1">
           <button
             onClick={() => setView('mobile')}
             className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase tracking-wider border transition-colors ${view === 'mobile' ? 'border-primary/40 text-primary bg-primary/10' : 'border-border text-text-dark'}`}
@@ -163,31 +300,9 @@ export function FundingTable() {
         </div>
       </div>
 
-      {/* Desktop table header */}
-      {view === 'desktop' && (
-        <div className="flex-shrink-0 border-b border-border bg-[#030304] select-none overflow-x-auto">
-          <div className={`grid ${GRID_DESKTOP} items-center px-4 py-3 text-[10px] uppercase tracking-widest text-text-dark font-bold min-w-[700px]`}>
-            <div>#</div>
-            <div className="pl-2.5">Asset</div>
-            <div className="text-right pr-4">Price</div>
-            <div className="text-right pr-4 text-primary font-bold">Max Spread %</div>
-            <div className="text-right pr-4">
-              <div>Binance</div>
-              <div className="text-[8px] text-text-dark font-normal lowercase tracking-normal mt-0.5">Funding (8h) / Countdown</div>
-            </div>
-            <div className="text-right pr-4">
-              <div>Bybit</div>
-              <div className="text-[8px] text-text-dark font-normal lowercase tracking-normal mt-0.5">Funding (8h) / Countdown</div>
-            </div>
-            <div className="text-right pr-4">
-              <div>Blofin</div>
-              <div className="text-[8px] text-text-dark font-normal lowercase tracking-normal mt-0.5">Funding (8h) / Countdown</div>
-            </div>
-            <div className="text-right pr-4">Avg Rate</div>
-            <div className="text-right pr-4">24h Vol</div>
-            <div />
-          </div>
-        </div>
+      {/* Responsive desktop header — no horizontal scroll */}
+      {view === 'desktop' && containerWidth > 0 && (
+        <DesktopHeader containerWidth={containerWidth} />
       )}
 
       {/* Mobile header */}
@@ -204,8 +319,8 @@ export function FundingTable() {
         </div>
       )}
 
-      {/* Virtualized rows */}
-      <div ref={parentRef} className={`flex-1 overflow-y-auto min-h-0 ${view === 'desktop' ? 'overflow-x-auto' : ''}`}>
+      {/* Virtualized rows — no overflow-x */}
+      <div ref={parentRef} className="flex-1 overflow-y-auto min-h-0">
         <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
           {virtualizer.getVirtualItems().map((vRow) => {
             if (isLoading) {
@@ -221,8 +336,6 @@ export function FundingTable() {
 
             const d = rows[vRow.index];
             if (!d) return null;
-            const price = d.binance.price || 0;
-            const isExtreme = Math.abs(d.avgRate) > 0.07;
 
             if (view === 'mobile') {
               return (
@@ -235,82 +348,17 @@ export function FundingTable() {
               );
             }
 
-            // Desktop view
-            const rates = [d.binance.rate, d.bybit.rate];
-            if (d.blofin) rates.push(d.blofin.rate);
-            const maxSpread = Math.max(...rates) - Math.min(...rates);
-            const spreadColor = maxSpread > 0.05 
-              ? 'text-primary font-bold shadow-[0_0_8px_rgba(249,115,22,0.15)]' 
-              : maxSpread > 0.01 
-              ? 'text-text-muted' 
-              : 'text-text-dark';
-
             return (
               <div
                 key={vRow.key}
                 style={{ position: 'absolute', top: vRow.start, width: '100%', height: ROW_H }}
-                onClick={() => navigate(`/coin/${d.symbol}`)}
-                className={`grid ${GRID_DESKTOP} items-center px-4 border-b border-border/50 cursor-pointer group transition-colors hover:bg-panel-hover min-w-[700px] ${
-                  isExtreme ? 'bg-[#291910]/20' : ''
-                }`}
               >
-                {/* # */}
-                <div className="text-[10px] text-text-dark">{vRow.index + 1}</div>
-
-                {/* Asset */}
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <div
-                    className={`w-0.5 h-5 rounded-full flex-shrink-0 ${
-                      d.avgRate > 0.03 ? 'bg-danger' : d.avgRate < -0.03 ? 'bg-success' : 'bg-border'
-                    }`}
-                  />
-                  <div className="min-w-0">
-                    <div className="font-bold text-xs text-[#e2e8f0] leading-none truncate">
-                      {d.symbol.replace('USDT', '')}
-                    </div>
-                    <div className="text-[9px] text-text-dark mt-0.5">PERP</div>
-                  </div>
-                </div>
-
-                {/* Price */}
-                <div className="text-right font-mono text-[11px] text-text-muted truncate pr-4">
-                  {price > 0 ? `$${price.toLocaleString(undefined, { maximumFractionDigits: 4 })}` : '—'}
-                </div>
-
-                {/* Max Spread % */}
-                <div className={`text-right font-mono text-[11px] pr-4 ${spreadColor}`}>
-                  {maxSpread > 0 ? `${maxSpread.toFixed(4)}%` : '—'}
-                </div>
-
-                {/* Binance rate + countdown */}
-                <div className="pr-4">
-                  <RateCell rate={d.binance.rate} nextFunding={d.binance.nextFunding} />
-                </div>
-
-                {/* Bybit rate + countdown */}
-                <div className="pr-4">
-                  <RateCell rate={d.bybit.rate} nextFunding={d.bybit.nextFunding} />
-                </div>
-
-                {/* Blofin rate + countdown */}
-                <div className="pr-4">
-                  <RateCell rate={d.blofin?.rate ?? 0} nextFunding={d.blofin?.nextFunding} />
-                </div>
-
-                {/* Avg rate */}
-                <div className={`text-right font-mono font-bold text-xs pr-4 ${rateColor(d.avgRate)}`}>
-                  {d.avgRate.toFixed(4)}%
-                </div>
-
-                {/* 24h Vol */}
-                <div className="text-right font-mono text-[10px] text-text-dark pr-4">
-                  {d.vol24h > 0 ? fmtVol(d.vol24h) : '—'}
-                </div>
-
-                {/* Chevron */}
-                <div className="flex justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <ChevronRight size={12} className="text-text-dark" />
-                </div>
+                <DesktopRow
+                  d={d}
+                  index={vRow.index}
+                  onClick={() => navigate(`/coin/${d.symbol}`)}
+                  containerWidth={containerWidth}
+                />
               </div>
             );
           })}

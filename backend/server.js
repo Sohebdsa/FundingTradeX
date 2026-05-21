@@ -297,4 +297,4 @@ app.get('/api/klines', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-server.listen(PORT, "0.0.0.0" ,() => console.log(`Backend running on internet as well as port ${PORT}`));
+server.listen(PORT, "0.0.0.0" ,() => console.log(`Backend running on Internet as well as port ${PORT}`));

@@ -52,27 +52,27 @@ export function CoinDetail() {
   const sqProb = Math.min(99, Math.round(Math.abs(avgRate) * 1000));
 
   return (
-    <div className="flex flex-col h-full overflow-auto p-4 gap-4">
+    <div className="flex flex-col h-full overflow-auto p-3 md:p-4 gap-3 md:gap-4">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-xs flex-shrink-0">
+      <div className="flex items-center gap-2 text-xs flex-shrink-0 flex-wrap">
         <button onClick={() => navigate('/')} className="flex items-center gap-1.5 text-[#475569] hover:text-[#94a3b8] transition-colors">
           <ArrowLeft size={13} /> Market Overview
         </button>
         <span className="text-[#1e2430]">/</span>
         <span className="text-[#f1f5f9] font-bold">{symbol}</span>
-        <Link to={`/chart/${symbol}`} className="ml-auto flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#2563eb] border border-[#2563eb]/30 bg-[#2563eb]/10 px-3 py-1.5 rounded hover:bg-[#2563eb]/20 transition-colors">
-          <BarChart2 size={12} /> Open Chart
+        <Link to={`/chart/${symbol}`} className="ml-auto flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#2563eb] border border-[#2563eb]/30 bg-[#2563eb]/10 px-2.5 py-1.5 rounded hover:bg-[#2563eb]/20 transition-colors">
+          <BarChart2 size={12} /> Chart
         </Link>
       </div>
 
       {/* Title */}
-      <div className="flex items-start justify-between flex-shrink-0">
+      <div className="flex items-start justify-between flex-shrink-0 gap-2">
         <div>
-          <h1 className="text-2xl font-bold">{base}<span className="text-[#374151]">/USDT</span></h1>
+          <h1 className="text-xl md:text-2xl font-bold">{base}<span className="text-[#374151]">/USDT</span></h1>
           <div className="text-[#475569] text-xs mt-0.5">Perpetual Futures · Binance & Bybit</div>
         </div>
-        <div className="text-right">
-          <div className="text-2xl font-bold font-mono">
+        <div className="text-right flex-shrink-0">
+          <div className="text-lg md:text-2xl font-bold font-mono">
             {price > 0 ? `$${price.toLocaleString(undefined,{maximumFractionDigits:4})}` : '—'}
           </div>
           <div className={`text-sm font-mono ${coin.pctChg24h >= 0 ? 'text-[#10b981]' : 'text-[#ef4444]'}`}>
@@ -82,7 +82,7 @@ export function CoinDetail() {
       </div>
 
       {/* Core stats grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 flex-shrink-0">
+      <div className="grid grid-cols-2 gap-2 flex-shrink-0">
         <InfoBox label="Binance Rate"  value={`${coin.binance.rate.toFixed(4)}%`}  color={rateColor(coin.binance.rate)} />
         <InfoBox label="Bybit Rate"    value={`${coin.bybit.rate.toFixed(4)}%`}    color={rateColor(coin.bybit.rate)} />
         <InfoBox label="Avg Rate"      value={`${avgRate.toFixed(4)}%`}            color={rateColor(avgRate)} />

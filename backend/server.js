@@ -197,6 +197,7 @@ async function updateMarketData() {
     const byNext = by ? parseInt(by.nextFundingTime || 0) : 0;
     const byOI = by ? parseFloat(by.openInterest || 0) : 0;
     const binOI = oiCache[sym] || 0;
+    const blofinEntry = blofinMap[sym];
     const avgRate = b && by ? (bRate + byRate) / 2 : (bRate || byRate);
     const vol24h = stat ? parseFloat(stat.quoteVolume) : 0;
     const pctChg = stat ? parseFloat(stat.priceChangePercent) : 0;
@@ -205,6 +206,7 @@ async function updateMarketData() {
       symbol: sym,
       binance: { rate: bRate, price, nextFunding: bNext, oi: binOI },
       bybit: { rate: byRate, nextFunding: byNext, oi: byOI },
+      blofin: blofinEntry ? { rate: blofinEntry.rate, nextFunding: blofinEntry.nextFunding } : null,
       avgRate, vol24h, pctChg24h: pctChg,
     });
 

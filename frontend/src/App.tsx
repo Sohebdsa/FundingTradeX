@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { useStore } from './store';
 import { Layout } from './components/Layout';
 import { MarketOverview } from './pages/MarketOverview';
+import { FundingRatesPage } from './pages/FundingRatesPage';
 import { CoinDetail } from './pages/CoinDetail';
 import { ChartPage } from './pages/ChartPage';
 import { SignalsPage } from './pages/SignalsPage';
@@ -16,6 +17,7 @@ function AppContent() {
     <Layout>
       <Routes>
         <Route path="/"              element={<MarketOverview />} />
+        <Route path="/rates"          element={<FundingRatesPage />} />
         <Route path="/analytics"     element={<AnalyticsPage />} />
         <Route path="/coin/:symbol"  element={<CoinDetail />} />
         <Route path="/chart"         element={<ChartPage />} />

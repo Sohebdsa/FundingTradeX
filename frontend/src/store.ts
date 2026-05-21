@@ -5,6 +5,7 @@ export interface FundingData {
   symbol: string;
   binance:  { rate: number; price: number; nextFunding: number; oi: number };
   bybit:    { rate: number; nextFunding: number; oi: number };
+  blofin?:  { rate: number; nextFunding: number };
   avgRate:  number;
   vol24h:   number;
   pctChg24h: number;
@@ -29,7 +30,7 @@ export interface Signal {
 export interface VolumeSpike {
   symbol: string; vol24h: number; pctChg: number; type: 'BUYING' | 'SELLING';
 }
-export type FilterMode = 'all' | 'high_funding' | 'arbitrage' | 'extreme_positive' | 'extreme_negative' | 'meme' | 'volume_spike';
+export type FilterMode = 'all' | 'high_funding' | 'arbitrage' | 'extreme_positive' | 'extreme_negative' | 'meme' | 'volume_spike' | 'high_max_spread' | 'low_max_spread';
 
 const MEME_TOKENS = new Set(['DOGE','SHIB','PEPE','FLOKI','BONK','WIF','MEME','BOME','DOGS','NEIRO','POPCAT','COW','TURBO','BRETT']);
 
@@ -78,6 +79,20 @@ export const useStore = create<MarketState>((set, get) => ({
       case 'arbitrage':        list = list.filter(d => arbSet.has(d.symbol)).sort((a,b)=>parseFloat((arbitrageOpportunities.find(x=>x.symbol===b.symbol)?.spread??'0'))-parseFloat((arbitrageOpportunities.find(x=>x.symbol===a.symbol)?.spread??'0'))); break;
       case 'meme':             list = list.filter(d => MEME_TOKENS.has(d.symbol.replace('USDT',''))).sort((a,b)=>Math.abs(b.avgRate)-Math.abs(a.avgRate)); break;
       case 'volume_spike':     list = list.filter(d => spikeSet.has(d.symbol)).sort((a,b)=>b.vol24h-a.vol24h); break;
+      case 'high_max_spread':
+        list = list.sort((a, b) => {
+          const rA = [a.binance.rate, a.bybit.rate]; if (a.blofin) rA.push(a.blofin.rate);
+          const rB = [b.binance.rate, b.bybit.rate]; if (b.blofin) rB.push(b.blofin.rate);
+          return (Math.max(...rB) - Math.min(...rB)) - (Math.max(...rA) - Math.min(...rA));
+        });
+        break;
+      case 'low_max_spread':
+        list = list.sort((a, b) => {
+          const rA = [a.binance.rate, a.bybit.rate]; if (a.blofin) rA.push(a.blofin.rate);
+          const rB = [b.binance.rate, b.bybit.rate]; if (b.blofin) rB.push(b.blofin.rate);
+          return (Math.max(...rA) - Math.min(...rA)) - (Math.max(...rB) - Math.min(...rB));
+        });
+        break;
       default:                 list = list.sort((a,b)=>Math.abs(b.avgRate)-Math.abs(a.avgRate));
     }
     return list;

@@ -251,18 +251,19 @@ export function AnalyticsPage() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Tab bar */}
-      <div className="flex-shrink-0 bg-[#0d1017] border-b border-[#1e2430] px-4 pt-3 flex items-end gap-1 overflow-x-auto">
+      {/* Tab bar — horizontal scroll on mobile */}
+      <div className="flex-shrink-0 bg-[#0d1017] border-b border-[#1e2430] px-2 md:px-4 pt-2 md:pt-3 flex items-end gap-0.5 md:gap-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {TABS.map(({ id, label, icon: Icon, color }) => {
           const active = tab === id;
           return (
             <button key={id} onClick={() => setTab(id)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-t text-[10px] font-bold uppercase tracking-wider border-t border-l border-r transition-colors whitespace-nowrap ${
+              className={`flex items-center gap-1 md:gap-1.5 px-2 md:px-3 py-1.5 md:py-2 rounded-t text-[9px] md:text-[10px] font-bold uppercase tracking-wider border-t border-l border-r transition-colors whitespace-nowrap flex-shrink-0 ${
                 active ? 'border-[#1e2430] bg-[#0a0c10] text-[#f1f5f9]' : 'border-transparent text-[#475569] hover:text-[#94a3b8]'
               }`}
               style={active ? { borderBottomColor: color, borderBottomWidth: 2 } : {}}>
-              <Icon size={11} style={{ color: active ? color : undefined }} />
-              {label}
+              <Icon size={10} style={{ color: active ? color : undefined }} />
+              <span className="hidden sm:inline">{label}</span>
+              <span className="sm:hidden">{label.split(' ')[0]}</span>
               {counts[id] > 0 && (
                 <span className="ml-0.5 text-[8px] px-1 rounded" style={{ background: active ? `${color}20` : '#1e2430', color: active ? color : '#475569' }}>
                   {counts[id]}
@@ -273,8 +274,8 @@ export function AnalyticsPage() {
         })}
       </div>
 
-      {/* Content */}
-      <div className="flex-1 min-h-0 overflow-hidden p-4">
+      {/* Content — scrollable on mobile */}
+      <div className="flex-1 min-h-0 overflow-auto md:overflow-hidden p-2 md:p-4">
         {tab === 'heatmap'   && <FundingHeatmap />}
         {tab === 'oi'        && <OIChart />}
         {tab === 'footprint' && <FootprintPanel />}

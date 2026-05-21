@@ -2,7 +2,7 @@ module.exports = {
   // The IP address of the backend server.
   // When you write your backend IP here (e.g. '192.168.1.100'), 
   // CORS will dynamically allow requests from the frontend running on that same host/IP on any port.
-  backendIp: 'localhost',
+  backendIp: '13.201.97.220',
 
   // The port the backend server listens on
   port: process.env.PORT || 5000,
